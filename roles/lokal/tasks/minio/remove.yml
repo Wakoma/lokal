@@ -1,0 +1,47 @@
+---
+- name: List current policies
+  ansible.builtin.shell:
+    cmd: >
+      docker compose exec minio
+      mc admin policy ls local
+    chdir: "{{project_root}}/lokal"
+  register: minio_policies
+
+- name: Detach {{app_domain}} minio policy
+  ansible.builtin.shell:
+    cmd: >
+      docker compose exec minio
+      mc admin policy detach local {{app_domain}} --user {{app_bucket_user}}
+    chdir: "{{project_root}}/lokal"
+  when: "app_domain in minio_policies.stdout"
+
+- name: Remove{{app_domain}} minio policy
+  ansible.builtin.shell:
+    cmd: >
+      docker compose exec minio
+      mc admin policy rm local {{app_domain}}
+    chdir: "{{project_root}}/lokal"
+  when: "app_domain in minio_policies.stdout"
+
+- name: Remove {{app_bucket_user}} minio user
+  ansible.builtin.shell:
+    cmd: >
+      docker compose exec minio
+      mc admin user rm local {{app_bucket_user}}
+    chdir: "{{project_root}}/lokal"
+
+- name: Remove {{app_bucket_name}} minio bucket
+  ansible.builtin.shell:
+    cmd: >
+      docker compose exec minio
+      mc ls local
+    chdir: "{{project_root}}/lokal"
+  register: minio_buckets
+
+- name: Remove {{app_bucket_name}} minio bucket
+  ansible.builtin.shell:
+    cmd: >
+      docker compose exec minio
+      mc rb --dangerous --force local/{{app_bucket_name}}
+    chdir: "{{project_root}}/lokal"
+  when: "app_bucket_name in minio_buckets.stdout"

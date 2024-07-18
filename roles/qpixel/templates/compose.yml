@@ -13,12 +13,21 @@ services:
       COMMUNITY_ADMIN_PASSWORD: "{{admin_password}}"
       COMMUNITY_ADMIN_EMAIL: admin@{{domain}}
       COMMUNITY_OTHERS_SHOW: "false"
-      SECRET_KEY_BASE: "{{(lokal_secret + 'secret_key_base') | hash('sha1') | regex_search('\\w{24}') }}"
+      SECRET_KEY_BASE: "{{(lokal_secret + 'qpixel') | hash('sha1') | regex_search('\\w{24}') }}"
     volumes:  # use only bind-mounts inside {{app_root}} folder as shown below
     - {{app_root}}/config/database.yml:/code/config/database.yml
     - {{app_root}}/config/storage.yml:/code/config/storage.yml
     - {{app_root}}/log:/code/log
     - {{app_root}}/.irbrc:/code/.irbrc
+{% if qpixel_logo is defined %}
+    - {{app_root}}/assets/logo.png:/code/app/assets/logo.png
+    - {{app_root}}/assets/logo.png:/code/app/assets/codidact.png
+{% endif %}
+{% if qpixel_icon is defined %}
+    - {{app_root}}/assets/logo.png:/code/app/assets/favicon.ico
+    - {{app_root}}/assets/logo.png:/code/app/assets/square.ico
+    - {{app_root}}/assets/logo.png:/code/app/assets/fbm.ico
+{% endif %}
     restart: unless-stopped
     depends_on:
     - redis

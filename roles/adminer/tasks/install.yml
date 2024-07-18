@@ -1,0 +1,8 @@
+---
+- name: Install adminer
+  ansible.builtin.include_role:
+    name: lokal
+    tasks_from: install
+  vars:
+    app: adminer
+    app_domain: "db.{{domain}}"

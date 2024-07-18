@@ -7,11 +7,12 @@
     app: qpixel
     app_domain: "{{qpixel_domain}}"
     app_port: 3000
-    app_version: 2024.3
+    app_version: 2024.7.1
     app_dirs:
     - data
     - config
     - log
+    - assets
     app_templates:
       database.yml: config/database.yml
       storage.yml: config/storage.yml
@@ -34,6 +35,18 @@
     src: "files/.irbrc"
     dest: "{{app_root}}/.irbrc" # {{app_root}} is accessible because the lokal.install already ran
     force: false
+
+- name: Copy over large logo
+  ansible.builtin.copy:
+    src: "{{qpixel_logo}}"
+    dest: "{{app_root}}/assets/logo.png"
+  when: qpixel_logo is defined
+
+- name: Copy over the icon
+  ansible.builtin.copy:
+    src: "{{qpixel_icon}}"
+    dest: "{{app_root}}/assets/favicon.ico"
+  when: qpixel_icon is defined
 
 # This is the command to start your app manually
 - name: Start the {{app_domain}}

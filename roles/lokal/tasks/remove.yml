@@ -1,60 +1,56 @@
----
-- name: Export app_root variable
-  ansible.builtin.set_fact:
-    app_root: "{{project_root}}/{{app_domain}}"
+#
+# How to use remove.yml in your application
+#
+# Create file your-app/tasks/remove.yml with following content
+#
+# ---
+# - name: Remove {{qpixel_domain}}
+#   ansible.builtin.include_role:
+#     name: lokal
+#     tasks_from: remove
+#   vars:
+#     app_domain: "{{qpixel_domain}}"
+#     app_db: "mysql"  # can be "postgres" or simply omitted
+#     app_bucket: "minio"  # or can be omitted
 
+---
 - name: Docker-compose down
   ansible.builtin.shell:
     cmd: "docker compose down"
-    chdir: "{{app_root}}"
+    chdir: "{{project_root}}/{{app_domain}}"
   ignore_errors: true  # ignore because docker compose down fails on removing external networks
   notify: "lokal : Restart router"
 
-# Auto-generate database name, user, and password in case that the developer/user
-# did not provide their own app_db_name (and others (user, password that we don't check)
-- name: "Export app_db facts"
-  ansible.builtin.set_fact:
+- name: "Call mysql/remove.yml"
+  ansible.builtin.include_tasks:
+    file: mysql/remove.yml
+  vars:
     app_db_name: "{{ app_domain | replace('.', '_') | replace('-', '') }}"
     app_db_user: "{{ app_domain | replace('.', '_') | replace('-', '') }}"
     app_db_password: "{{ (lokal_secret + app_domain) | hash('sha1') | regex_search('\\w{10}') }}"
-
-- name: Drop {{app_domain}} MySQL database
-  ansible.builtin.shell:
-    cmd: >
-      docker exec mariadb
-      mysql -u root --password={{mysql_root_password}} -e "DROP DATABASE {{app_db_name}}"
   when: app_db is defined and app_db == "mysql"
-  ignore_errors: true
 
-- name: Drop {{app_domain}} MySQL user
-  ansible.builtin.shell:
-    cmd: >
-      docker exec mariadb
-      mysql -u root --password={{mysql_root_password}} -e "DROP USER '{{app_db_user}}'@'%'"
-  when: app_db is defined and app_db == "mysql"
-  ignore_errors: true
-
-- name: Remove {{app_domain}} PostgreSQL database
-  ansible.builtin.shell:
-    cmd: >
-      docker compose exec postgres
-      psql -c 'DROP DATABASE "{{app_db_name}}"' postgres postgres;
-    chdir: "{{project_root}}/lokal"
+- name: "Call postgres/remove.yml"
+  ansible.builtin.include_tasks:
+    file: postgres/remove.yml
+  vars:
+    app_db_name: "{{ app_domain | replace('.', '_') | replace('-', '') }}"
+    app_db_user: "{{ app_domain | replace('.', '_') | replace('-', '') }}"
+    app_db_password: "{{ (lokal_secret + app_domain) | hash('sha1') | regex_search('\\w{10}') }}"
   when: app_db is defined and app_db == "postgres"
-  ignore_errors: true
 
-- name: Remove {{app_domain}} PostgreSQL user
-  ansible.builtin.shell:
-    cmd: >
-      docker compose exec postgres
-      psql -c 'DROP USER "{{app_db_user}}"' postgres postgres;
-    chdir: "{{project_root}}/lokal"
-  when: app_db is defined and app_db == "postgres"
-  ignore_errors: true
+- name: "Call minio/remove.yml"
+  ansible.builtin.include_tasks:
+    file: minio/remove.yml
+  vars:
+    app_bucket_name: "{{ app_domain | replace('.', '-') | replace('_', '') }}"
+    app_bucket_user: "{{ app_domain | replace('.', '-') | replace('_', '') }}"
+    app_bucket_password: "{{ (lokal_secret + app_domain) | hash('sha1') | regex_search('\\w{10}') }}"
+  when: app_bucket is defined and app_bucket == "minio"
 
-- name: Remove the app directory {{app_root}}
+- name: Remove the app directory
   ansible.builtin.file:
-    path: "{{app_root}}"
+    path: "{{project_root}}/{{app_domain}}"
     state: absent
   become: true
 

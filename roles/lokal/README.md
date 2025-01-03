@@ -6,14 +6,15 @@ in Lokal. Each role should have following structure
 roles/
   - your-app/
     - defaults/
-       main.yml // defaults for templates & tasks
+       main.yml // default values for the service
     - tasks/
-      - main.yml (install & upgrade)
+      - main.yml - contains init steps (defining variables mainly)
+      - install.yml
       - restore.yml
       - backup.yml
     - templates/
-      - compose.yml.j2
-      - anything.else.j2
+      - compose.yml
+      - anything.else
     - files/
       - static.file1.txt
       - a.binary.zip
@@ -27,14 +28,15 @@ and `gid`.
 ## Variables
 
 A list of available variables that you can define in role's `tasks/main.yml` when
-including `lokal.install` tasks. Please see the example `tasks/main.yml`
+including `lokal.install` tasks. Please see the example `roles/_example/tasks/main.yml`
 
-- `app` folder name created for your app - full path will be available in `app_root` variable
-- `data_dirs` (optional) list of directories that will be created inside `app_root`
+- `app` name of your app -
+- `app_dirs` (optional) list of directories that will be created inside `app_root`
+- `app_templates` (optional) files expected in `template/` that will be rendered to
+  Example: `app_templates: database.yml: config/database.yml` will render template/config.conf from local folder to remote `{{app_root}}/config/database.yml` so you can use it in docker-compose.yml simply as `"config/database.yml"`
+- `app_git` (optional) git URL where to download the app from - expects `build: {context: "{{app}}", dockerfile: {{app}}/Dockerfile}` in your compose.yml so the docker is built directly on the server
 - `app_version` (optional) version of your app - if an update happen that `app_updated` will be true
-- `mysql_db`, `mysql_user`, and `mysql_password` will prepare a MySQL database
-- `postgres_db`, `postgres_user`, and `postgres_password` will prepare a PostgreSQL database
-- `firewall_tcp` and/or `firewall_udp` should contain list of ports to open in firewall
+- `app_db`, `app_db_user`, and `app_db_password` will prepare a database of type app_db ("mysql" or "postgres")
 - `start` (optional, boolean) - whether directly invoke `docker compose up -d` at the end
 
 The lokal install tasks will finish with rendering  `templates/compose.yml` into
@@ -59,6 +61,28 @@ variables above. The same applies for the network as well.
 Lokal services must be completely written as docker-compose files. The `base`
 gives you a database and a traefik instance for routing the requests. Please
 see the [compose.yml](examples/compose.yml) in examples directory.
+
+### Cloning a GIT repository
+
+Sometimes, you don't have a docker container built in a docker hub. You can specify
+`app_git` with GIT URL and `app` with folder name where the GIT repo should be cloned.
+Also specify `app_version` to the tag/branch that you want cloned. Only when you change
+this value, the repo will be fetched and updated! So restrain from using branch names.
+Once install is finihed, you will find your app cloned under `{{app_root}}/{{app}}` so
+you can then reference it in your `compose.yml` as
+
+```
+services:
+  {{app}}:
+    build:
+      context: "{{app}}"
+      dockerfile: "{{app}}/Dockerfile"
+    volumes:
+      ...
+```
+
+because the compose.yml is run in {{app_root}} so your code will be accessible in "{{app}}" folder.
+
 
 ### Networks
 

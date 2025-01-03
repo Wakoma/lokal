@@ -32,10 +32,10 @@ namecheap_api_user:
 namecheap_api_key:
 
 # Common services settings
-mysql_root_password: "{{'mysql' + lokal_secret | hash('sha1') | regex_search('\\w{8}') }}"
+mysql_root_password: "{{('mysql' + lokal_secret) | hash('sha1') | regex_search('\\w{8}') }}"
 mysql_host: mariadb
 mysql_port: 3306
-postgres_root_password: "{{'postgres' + lokal_secret | hash('sha1') | regex_search('\\w{8}') }}"
+postgres_root_password: "{{('postgres' + lokal_secret) | hash('sha1') | regex_search('\\w{8}') }}"
 postgres_host: postgres
 postgres_port: 5432
 

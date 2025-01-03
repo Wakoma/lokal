@@ -19,6 +19,14 @@
   loop: "{{app_dirs}}"
   when: app_dirs is defined
 
+- name: Checkout app git repository if given
+  ansible.builtin.git:
+    repo: "{{app_git}}"
+    dest: "{{app_root}}/{{app}}"
+    version: "{%if app_version is defined%}{{app_version}}{%else%}'HEAD'{%endif%}"
+    force: true
+  when: app_git is defined
+
 - name: Link provided SSL certificate for this subdomain
   ansible.builtin.file:
     state: link

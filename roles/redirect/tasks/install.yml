@@ -1,0 +1,7 @@
+---
+- name: Install redirect to {{redirect_to}}
+  include_role:
+    name: lokal
+    tasks_from: install
+  vars:
+    app_domain: "{{redirect_from}}"
